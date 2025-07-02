@@ -20,7 +20,6 @@ const TabBarItem = ({ icon, isActive, onPress, label, isSearch }: TabBarItemProp
       isActive && !isSearch && styles.activeTabItem,
     ]}
     activeOpacity={0.7}
-    accessibilityRole="button"
     accessibilityState={{ selected: isActive }}
     accessibilityLabel={label}
   >

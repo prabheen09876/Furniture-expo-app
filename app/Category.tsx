@@ -34,7 +34,6 @@ const Category = ({
       onPress={onPress}
       style={styles.categoryContainer}
       activeOpacity={0.7}
-      accessibilityRole="button"
       accessibilityState={{ selected: isActive }}
     >
       <View 
