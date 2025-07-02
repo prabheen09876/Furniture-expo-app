@@ -12,16 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Search, 
-  Edit3, 
-  Trash2, 
-  Grid3x3,
-  Eye,
-  EyeOff
-} from 'lucide-react-native';
+import { ArrowLeft, Plus, Search, CreditCard as Edit3, Trash2, Grid3x3, Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';

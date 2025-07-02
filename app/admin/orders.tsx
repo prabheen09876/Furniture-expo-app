@@ -10,16 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { 
-  ArrowLeft, 
-  Search, 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  Truck,
-  XCircle,
-  DollarSign
-} from 'lucide-react-native';
+import { ArrowLeft, Search, Package, Clock, CircleCheck as CheckCircle, Truck, Circle as XCircle, DollarSign } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
