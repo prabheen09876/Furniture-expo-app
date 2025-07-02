@@ -6,7 +6,6 @@ import { AuthProvider } from '../contexts/AuthContext';
 import TabBar from './TabBar';
 import { CartProvider } from '../contexts/CartContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
-import { useFrameworkReady } from '../hooks/useFrameworkReady';
 import theme from './theme'
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
