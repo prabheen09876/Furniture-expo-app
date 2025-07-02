@@ -7,7 +7,8 @@ import TabBar from './TabBar';
 import { CartProvider } from '../contexts/CartContext';
 import { WishlistProvider } from '../contexts/WishlistContext';
 import { useFrameworkReady } from '../hooks/useFrameworkReady';
-import theme from './theme';
+import theme from './theme'
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 export default function RootLayout() {
   useFrameworkReady();
