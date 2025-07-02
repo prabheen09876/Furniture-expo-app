@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Image, ImageSourcePropType, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ImageSourcePropType, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import PlaceholderImage from './components/PlaceholderImage';
 import theme from './theme';
@@ -53,10 +53,9 @@ const ProductCard = ({
             />
           </View>
         )}
-        <TouchableOpacity
+        <Pressable
           onPress={handleFavoritePress}
           style={styles.favoriteButton}
-          activeOpacity={0.7}
           accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           accessibilityRole="button"
         >
@@ -65,7 +64,7 @@ const ProductCard = ({
             size={20}
             color={isFavorite ? theme.colors.error : theme.colors.textLight}
           />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       <View style={styles.detailsContainer}>
         <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
