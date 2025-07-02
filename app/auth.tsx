@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -16,17 +17,33 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthScreen() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, loading } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleAuth = async () => {
-    if (!email || !password) {
+    if (!email.trim() || !password.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (!validateEmail(email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
       return;
     }
 
@@ -35,23 +52,45 @@ export default function AuthScreen() {
       return;
     }
 
-    setLoading(true);
+    setAuthLoading(true);
     try {
       const { error } = isSignUp 
-        ? await signUp(email, password)
-        : await signIn(email, password);
+        ? await signUp(email.trim(), password)
+        : await signIn(email.trim(), password);
 
       if (error) {
-        Alert.alert('Error', error.message);
+        console.error('Auth error:', error);
+        let errorMessage = 'An error occurred. Please try again.';
+        
+        if (error.message) {
+          if (error.message.includes('Invalid login credentials')) {
+            errorMessage = 'Invalid email or password. Please check your credentials.';
+          } else if (error.message.includes('User already registered')) {
+            errorMessage = 'An account with this email already exists. Please sign in instead.';
+          } else if (error.message.includes('Password should be at least 6 characters')) {
+            errorMessage = 'Password must be at least 6 characters long.';
+          } else if (error.message.includes('Unable to validate email address')) {
+            errorMessage = 'Please enter a valid email address.';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
+        Alert.alert('Authentication Error', errorMessage);
       } else {
+        // Success - navigation will be handled by the auth state change
+        console.log('Authentication successful');
         router.replace('/');
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong');
+      console.error('Auth exception:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   };
+
+  const isLoading = loading || authLoading;
 
   return (
     <LinearGradient colors={['#F5E6D3', '#E8D5C4']} style={styles.container}>
@@ -89,6 +128,8 @@ export default function AuthScreen() {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -102,10 +143,14 @@ export default function AuthScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff size={20} color="#8B7355" strokeWidth={2} />
@@ -119,37 +164,69 @@ export default function AuthScreen() {
             {isSignUp && (
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Confirm Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm your password"
-                  placeholderTextColor="#8B7355"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={true}
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Confirm your password"
+                    placeholderTextColor="#8B7355"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} color="#8B7355" strokeWidth={2} />
+                    ) : (
+                      <Eye size={20} color="#8B7355" strokeWidth={2} />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
             <TouchableOpacity
-              style={[styles.authButton, loading && styles.authButtonDisabled]}
+              style={[styles.authButton, isLoading && styles.authButtonDisabled]}
               onPress={handleAuth}
-              disabled={loading}
+              disabled={isLoading}
             >
-              <Text style={styles.authButtonText}>
-                {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.authButtonText}>
+                  {isSignUp ? 'Sign Up' : 'Sign In'}
+                </Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.switchContainer}>
               <Text style={styles.switchText}>
                 {isSignUp ? 'Already have an account?' : "Don't have an account?"}
               </Text>
-              <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
-                <Text style={styles.switchButton}>
+              <TouchableOpacity 
+                onPress={() => setIsSignUp(!isSignUp)}
+                disabled={isLoading}
+              >
+                <Text style={[styles.switchButton, isLoading && styles.switchButtonDisabled]}>
                   {isSignUp ? 'Sign In' : 'Sign Up'}
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {/* Debug info for development */}
+            {__DEV__ && (
+              <View style={styles.debugContainer}>
+                <Text style={styles.debugText}>
+                  Debug: Email confirmation should be disabled in Supabase settings
+                </Text>
+              </View>
+            )}
           </BlurView>
         </View>
       </KeyboardAvoidingView>
@@ -271,5 +348,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2D1B16',
     fontWeight: '600',
+  },
+  switchButtonDisabled: {
+    opacity: 0.5,
+  },
+  debugContainer: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 0, 0.1)',
+    borderRadius: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#8B7355',
+    textAlign: 'center',
   },
 });
