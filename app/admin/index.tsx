@@ -9,16 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  DollarSign, 
-  TrendingUp,
-  Grid3x3,
-  Settings,
-  BarChart3
-} from 'lucide-react-native';
+import { Package, ShoppingCart, Users, DollarSign, TrendingUp, Grid3x3, Settings, ChartBar as BarChart3 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
