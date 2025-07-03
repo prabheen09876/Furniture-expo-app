@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { User, Settings, ShoppingBag, Heart, CircleHelp as HelpCircle, LogOut, ChevronRight } from 'lucide-react-native';
+import { User, Settings, ShoppingBag, Heart, CircleHelp as HelpCircle, LogOut, ChevronRight, Shield } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -48,6 +48,10 @@ export default function ProfileScreen() {
     router.replace('/');
   };
 
+  const handleAdminAccess = () => {
+    router.push('/admin');
+  };
+
   return (
     <LinearGradient colors={['#F5E6D3', '#E8D5C4']} style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
@@ -84,6 +88,19 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>Orders</Text>
           </BlurView>
         </View>
+
+        {/* Admin Access */}
+        <TouchableOpacity style={styles.adminButton} onPress={handleAdminAccess}>
+          <BlurView intensity={40} style={styles.adminInner}>
+            <View style={styles.adminLeft}>
+              <View style={styles.adminIcon}>
+                <Shield size={20} color="#4F46E5" strokeWidth={2} />
+              </View>
+              <Text style={styles.adminText}>Admin Dashboard</Text>
+            </View>
+            <ChevronRight size={16} color="#8B7355" strokeWidth={2} />
+          </BlurView>
+        </TouchableOpacity>
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
@@ -201,6 +218,38 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: '#8B7355',
+  },
+  adminButton: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  adminInner: {
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(79, 70, 229, 0.2)',
+  },
+  adminLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  adminIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  adminText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#4F46E5',
   },
   menuContainer: {
     paddingHorizontal: 20,

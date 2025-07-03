@@ -125,7 +125,7 @@ export default function CategoriesScreen() {
                   <View style={styles.productFooter}>
                     <Text style={styles.productPrice}>${product.price}</Text>
                     <View style={styles.ratingContainer}>
-                      <Text style={styles.rating}>⭐ {product.rating.toFixed(1)}</Text>
+                      <Text style={styles.rating}>⭐ {product.rating?.toFixed(1) || '0.0'}</Text>
                     </View>
                   </View>
                 </View>
