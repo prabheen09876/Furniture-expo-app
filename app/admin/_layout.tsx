@@ -26,7 +26,7 @@ export default function AdminLayout() {
         .select('*')
         .eq('id', user.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setIsAdmin(false);
