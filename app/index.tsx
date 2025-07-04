@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { Search, Bell } from 'lucide-react-native';
+import { Search, Bell, Star } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
@@ -42,6 +42,7 @@ export default function HomeScreen() {
         .from('products')
         .select('*')
         .eq('in_stock', true)
+        .eq('is_active', true)
         .limit(6);
 
       if (error) throw error;
@@ -87,10 +88,12 @@ export default function HomeScreen() {
         </View>
 
         {/* Search Bar */}
-        <BlurView intensity={20} style={styles.searchContainer}>
-          <Search size={18} color="#8B7355" strokeWidth={2} />
-          <Text style={styles.searchPlaceholder}>Search furniture...</Text>
-        </BlurView>
+        <TouchableOpacity onPress={() => router.push('/search')}>
+          <BlurView intensity={20} style={styles.searchContainer}>
+            <Search size={18} color="#8B7355" strokeWidth={2} />
+            <Text style={styles.searchPlaceholder}>Search furniture...</Text>
+          </BlurView>
+        </TouchableOpacity>
 
         {/* Categories */}
         <View style={styles.categoriesContainer}>
@@ -130,12 +133,25 @@ export default function HomeScreen() {
                 <BlurView intensity={40} style={styles.productCardInner}>
                   <View style={styles.productImageContainer}>
                     <Image source={{ uri: product.image_url }} style={styles.productImage} />
+                    {product.original_price && product.original_price > product.price && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>
+                          {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.productInfo}>
                     <Text style={styles.productName} numberOfLines={1}>
                       {product.name}
                     </Text>
-                    <Text style={styles.productPrice}>${product.price}</Text>
+                    <View style={styles.productFooter}>
+                      <Text style={styles.productPrice}>${product.price}</Text>
+                      <View style={styles.ratingContainer}>
+                        <Star size={12} color="#FFD700" fill="#FFD700" strokeWidth={2} />
+                        <Text style={styles.rating}>{product.rating?.toFixed(1) || '0.0'}</Text>
+                      </View>
+                    </View>
                   </View>
                 </BlurView>
               </TouchableOpacity>
@@ -285,11 +301,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 12,
+    position: 'relative',
   },
   productImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FF6B47',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  discountText: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   productInfo: {
     alignItems: 'center',
@@ -298,13 +329,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#2D1B16',
-    marginBottom: 4,
+    marginBottom: 8,
     textAlign: 'center',
+  },
+  productFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
   },
   productPrice: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#2D1B16',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rating: {
+    fontSize: 12,
+    color: '#8B7355',
+    marginLeft: 4,
+    fontWeight: '500',
   },
   authPrompt: {
     flex: 1,

@@ -78,7 +78,6 @@ export default function AuthScreen() {
         
         Alert.alert('Authentication Error', errorMessage);
       } else {
-        // Success - navigation will be handled by the auth state change
         console.log('Authentication successful');
         router.replace('/');
       }
@@ -88,12 +87,6 @@ export default function AuthScreen() {
     } finally {
       setAuthLoading(false);
     }
-  };
-
-  const fillAdminCredentials = () => {
-    setEmail('admin@example.com');
-    setPassword('admin123#');
-    setIsSignUp(false);
   };
 
   const isLoading = loading || authLoading;
@@ -123,11 +116,6 @@ export default function AuthScreen() {
                 : 'Sign in to your Casa account'
               }
             </Text>
-
-            {/* Admin Quick Login */}
-            <TouchableOpacity style={styles.adminQuickLogin} onPress={fillAdminCredentials}>
-              <Text style={styles.adminQuickLoginText}>🔑 Admin Quick Login</Text>
-            </TouchableOpacity>
 
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Email</Text>
@@ -229,13 +217,6 @@ export default function AuthScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Admin Credentials Info */}
-            <View style={styles.adminInfo}>
-              <Text style={styles.adminInfoTitle}>Admin Access</Text>
-              <Text style={styles.adminInfoText}>Email: admin@example.com</Text>
-              <Text style={styles.adminInfoText}>Password: admin123#</Text>
-            </View>
           </BlurView>
         </View>
       </KeyboardAvoidingView>
@@ -286,23 +267,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B7355',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
     lineHeight: 22,
-  },
-  adminQuickLogin: {
-    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(79, 70, 229, 0.2)',
-  },
-  adminQuickLoginText: {
-    fontSize: 14,
-    color: '#4F46E5',
-    fontWeight: '600',
-    textAlign: 'center',
   },
   inputContainer: {
     marginBottom: 20,
@@ -362,7 +328,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
   switchText: {
     fontSize: 14,
@@ -376,26 +341,5 @@ const styles = StyleSheet.create({
   },
   switchButtonDisabled: {
     opacity: 0.5,
-  },
-  adminInfo: {
-    backgroundColor: 'rgba(139, 115, 85, 0.1)',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 115, 85, 0.2)',
-  },
-  adminInfoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2D1B16',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  adminInfoText: {
-    fontSize: 12,
-    color: '#8B7355',
-    textAlign: 'center',
-    marginBottom: 2,
-    fontFamily: 'monospace',
   },
 });

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { ArrowLeft, SlidersHorizontal } from 'lucide-react-native';
+import { ArrowLeft, SlidersHorizontal, Star } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
@@ -42,7 +42,8 @@ export default function CategoriesScreen() {
       let query = supabase
         .from('products')
         .select('*')
-        .eq('in_stock', true);
+        .eq('in_stock', true)
+        .eq('is_active', true);
 
       if (selectedCategory !== 'all') {
         query = query.eq('category', selectedCategory);
@@ -114,6 +115,13 @@ export default function CategoriesScreen() {
               <BlurView intensity={40} style={styles.productCardInner}>
                 <View style={styles.productImageContainer}>
                   <Image source={{ uri: product.image_url }} style={styles.productImage} />
+                  {product.original_price && product.original_price > product.price && (
+                    <View style={styles.discountBadge}>
+                      <Text style={styles.discountText}>
+                        {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 <View style={styles.productInfo}>
                   <Text style={styles.productName} numberOfLines={2}>
@@ -123,9 +131,15 @@ export default function CategoriesScreen() {
                     {product.description}
                   </Text>
                   <View style={styles.productFooter}>
-                    <Text style={styles.productPrice}>${product.price}</Text>
+                    <View style={styles.priceContainer}>
+                      <Text style={styles.productPrice}>${product.price}</Text>
+                      {product.original_price && product.original_price > product.price && (
+                        <Text style={styles.originalPrice}>${product.original_price}</Text>
+                      )}
+                    </View>
                     <View style={styles.ratingContainer}>
-                      <Text style={styles.rating}>⭐ {product.rating?.toFixed(1) || '0.0'}</Text>
+                      <Star size={12} color="#FFD700" fill="#FFD700" strokeWidth={2} />
+                      <Text style={styles.rating}>{product.rating?.toFixed(1) || '0.0'}</Text>
                     </View>
                   </View>
                 </View>
@@ -227,11 +241,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 12,
+    position: 'relative',
   },
   productImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FF6B47',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  discountText: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   productInfo: {
     flex: 1,
@@ -241,6 +270,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2D1B16',
     marginBottom: 4,
+    lineHeight: 18,
   },
   productDescription: {
     fontSize: 12,
@@ -250,12 +280,21 @@ const styles = StyleSheet.create({
   productFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
+  },
+  priceContainer: {
+    flex: 1,
   },
   productPrice: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#2D1B16',
+  },
+  originalPrice: {
+    fontSize: 12,
+    color: '#8B7355',
+    textDecorationLine: 'line-through',
+    marginTop: 2,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -264,5 +303,7 @@ const styles = StyleSheet.create({
   rating: {
     fontSize: 12,
     color: '#8B7355',
+    marginLeft: 4,
+    fontWeight: '500',
   },
 });

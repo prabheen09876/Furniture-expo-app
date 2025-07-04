@@ -9,9 +9,23 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { Package, ShoppingCart, Users, DollarSign, TrendingUp, Grid3x3, Settings, ChartBar as BarChart3 } from 'lucide-react-native';
+import { 
+  Package, 
+  ShoppingCart, 
+  Users, 
+  DollarSign, 
+  TrendingUp, 
+  Grid3x3, 
+  Settings, 
+  BarChart3,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  ArrowLeft
+} from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -22,9 +36,12 @@ interface DashboardStats {
   totalRevenue: number;
   pendingOrders: number;
   lowStockProducts: number;
+  recentOrders: number;
+  activeProducts: number;
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     totalOrders: 0,
@@ -32,6 +49,8 @@ export default function AdminDashboard() {
     totalRevenue: 0,
     pendingOrders: 0,
     lowStockProducts: 0,
+    recentOrders: 0,
+    activeProducts: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -47,14 +66,18 @@ export default function AdminDashboard() {
         usersResult,
         revenueResult,
         pendingOrdersResult,
-        lowStockResult
+        lowStockResult,
+        recentOrdersResult,
+        activeProductsResult
       ] = await Promise.all([
         supabase.from('products').select('id', { count: 'exact' }),
         supabase.from('orders').select('id', { count: 'exact' }),
         supabase.from('profiles').select('id', { count: 'exact' }),
         supabase.from('orders').select('total_amount').eq('payment_status', 'paid'),
         supabase.from('orders').select('id', { count: 'exact' }).eq('status', 'pending'),
-        supabase.from('products').select('id', { count: 'exact' }).lt('stock_quantity', 10)
+        supabase.from('products').select('id', { count: 'exact' }).lt('stock_quantity', 10),
+        supabase.from('orders').select('id', { count: 'exact' }).gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('products').select('id', { count: 'exact' }).eq('is_active', true)
       ]);
 
       const totalRevenue = revenueResult.data?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
@@ -66,6 +89,8 @@ export default function AdminDashboard() {
         totalRevenue,
         pendingOrders: pendingOrdersResult.count || 0,
         lowStockProducts: lowStockResult.count || 0,
+        recentOrders: recentOrdersResult.count || 0,
+        activeProducts: activeProductsResult.count || 0,
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -74,79 +99,97 @@ export default function AdminDashboard() {
     }
   };
 
-  const menuItems = [
+  const quickActions = [
     {
-      title: 'Products',
+      title: 'Add Product',
+      description: 'Create new product listing',
       icon: Package,
-      route: '/admin/products',
       color: '#4F46E5',
-      description: 'Manage product catalog'
+      route: '/admin/products',
+      action: 'add'
     },
     {
-      title: 'Orders',
+      title: 'View Orders',
+      description: 'Manage customer orders',
       icon: ShoppingCart,
-      route: '/admin/orders',
       color: '#059669',
-      description: 'Track and manage orders'
+      route: '/admin/orders'
     },
     {
-      title: 'Users',
+      title: 'User Management',
+      description: 'Manage user accounts',
       icon: Users,
-      route: '/admin/users',
       color: '#DC2626',
-      description: 'Manage user accounts'
+      route: '/admin/users'
     },
     {
       title: 'Categories',
+      description: 'Organize products',
       icon: Grid3x3,
-      route: '/admin/categories',
       color: '#7C2D12',
-      description: 'Organize product categories'
-    },
-    {
-      title: 'Analytics',
-      icon: BarChart3,
-      route: '/admin/analytics',
-      color: '#9333EA',
-      description: 'View sales analytics'
-    },
-    {
-      title: 'Settings',
-      icon: Settings,
-      route: '/admin/settings',
-      color: '#374151',
-      description: 'System configuration'
+      route: '/admin/categories'
     },
   ];
 
   const statCards = [
     {
-      title: 'Total Products',
-      value: stats.totalProducts.toString(),
-      icon: Package,
-      color: '#4F46E5',
-      change: '+12%'
+      title: 'Total Revenue',
+      value: `$${stats.totalRevenue.toLocaleString()}`,
+      icon: DollarSign,
+      color: '#059669',
+      change: '+12.5%',
+      trend: 'up'
     },
     {
       title: 'Total Orders',
       value: stats.totalOrders.toString(),
       icon: ShoppingCart,
-      color: '#059669',
-      change: '+8%'
+      color: '#4F46E5',
+      change: '+8.2%',
+      trend: 'up'
+    },
+    {
+      title: 'Active Products',
+      value: stats.activeProducts.toString(),
+      icon: Package,
+      color: '#7C2D12',
+      change: '+5.1%',
+      trend: 'up'
     },
     {
       title: 'Total Users',
       value: stats.totalUsers.toString(),
       icon: Users,
       color: '#DC2626',
-      change: '+15%'
+      change: '+15.3%',
+      trend: 'up'
+    },
+  ];
+
+  const alertCards = [
+    {
+      title: 'Pending Orders',
+      value: stats.pendingOrders,
+      description: 'Orders awaiting processing',
+      icon: Clock,
+      color: '#F59E0B',
+      urgent: stats.pendingOrders > 5
     },
     {
-      title: 'Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
-      color: '#7C2D12',
-      change: '+23%'
+      title: 'Low Stock Items',
+      value: stats.lowStockProducts,
+      description: 'Products below 10 units',
+      icon: AlertTriangle,
+      color: '#EF4444',
+      urgent: stats.lowStockProducts > 0
+    },
+    {
+      title: 'Recent Orders',
+      value: stats.recentOrders,
+      description: 'Orders in last 7 days',
+      icon: CheckCircle2,
+      color: '#059669',
+      urgent: false
     },
   ];
 
@@ -155,17 +198,25 @@ export default function AdminDashboard() {
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Admin Dashboard</Text>
-          <Text style={styles.subtitle}>Manage your furniture store</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ArrowLeft size={20} color="#2D1B16" strokeWidth={2} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>Admin Dashboard</Text>
+            <Text style={styles.subtitle}>Welcome back, {user?.email?.split('@')[0]}</Text>
+          </View>
+          <TouchableOpacity style={styles.settingsButton} onPress={() => router.push('/admin/settings' as any)}>
+            <Settings size={20} color="#2D1B16" strokeWidth={2} />
+          </TouchableOpacity>
         </View>
 
-        {/* Stats Cards */}
+        {/* Stats Overview */}
         <View style={styles.statsContainer}>
           {statCards.map((stat, index) => (
             <BlurView key={index} intensity={40} style={styles.statCard}>
               <View style={styles.statHeader}>
-                <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                  <stat.icon size={24} color={stat.color} strokeWidth={2} />
+                <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
+                  <stat.icon size={20} color={stat.color} strokeWidth={2} />
                 </View>
                 <View style={styles.statChange}>
                   <TrendingUp size={12} color="#059669" strokeWidth={2} />
@@ -180,39 +231,77 @@ export default function AdminDashboard() {
 
         {/* Alert Cards */}
         <View style={styles.alertsContainer}>
-          <BlurView intensity={40} style={[styles.alertCard, styles.warningAlert]}>
-            <Text style={styles.alertTitle}>Pending Orders</Text>
-            <Text style={styles.alertValue}>{stats.pendingOrders}</Text>
-            <Text style={styles.alertDescription}>Orders awaiting processing</Text>
-          </BlurView>
-          
-          <BlurView intensity={40} style={[styles.alertCard, styles.dangerAlert]}>
-            <Text style={styles.alertTitle}>Low Stock</Text>
-            <Text style={styles.alertValue}>{stats.lowStockProducts}</Text>
-            <Text style={styles.alertDescription}>Products below 10 units</Text>
-          </BlurView>
+          <Text style={styles.sectionTitle}>System Alerts</Text>
+          <View style={styles.alertsGrid}>
+            {alertCards.map((alert, index) => (
+              <BlurView 
+                key={index} 
+                intensity={40} 
+                style={[
+                  styles.alertCard,
+                  alert.urgent && styles.urgentAlert
+                ]}
+              >
+                <View style={styles.alertHeader}>
+                  <View style={[styles.alertIcon, { backgroundColor: `${alert.color}15` }]}>
+                    <alert.icon size={16} color={alert.color} strokeWidth={2} />
+                  </View>
+                  {alert.urgent && <View style={styles.urgentDot} />}
+                </View>
+                <Text style={styles.alertValue}>{alert.value}</Text>
+                <Text style={styles.alertTitle}>{alert.title}</Text>
+                <Text style={styles.alertDescription}>{alert.description}</Text>
+              </BlurView>
+            ))}
+          </View>
         </View>
 
-        {/* Menu Grid */}
-        <View style={styles.menuContainer}>
+        {/* Quick Actions */}
+        <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.menuGrid}>
-            {menuItems.map((item, index) => (
+          <View style={styles.actionsGrid}>
+            {quickActions.map((action, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.menuItem}
-                onPress={() => router.push(item.route as any)}
+                style={styles.actionItem}
+                onPress={() => router.push(action.route as any)}
               >
-                <BlurView intensity={40} style={styles.menuItemInner}>
-                  <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                    <item.icon size={28} color={item.color} strokeWidth={2} />
+                <BlurView intensity={40} style={styles.actionItemInner}>
+                  <View style={[styles.actionIcon, { backgroundColor: `${action.color}15` }]}>
+                    <action.icon size={24} color={action.color} strokeWidth={2} />
                   </View>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                  <Text style={styles.menuDescription}>{item.description}</Text>
+                  <Text style={styles.actionTitle}>{action.title}</Text>
+                  <Text style={styles.actionDescription}>{action.description}</Text>
                 </BlurView>
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* Performance Metrics */}
+        <View style={styles.metricsContainer}>
+          <BlurView intensity={40} style={styles.metricsCard}>
+            <View style={styles.metricsHeader}>
+              <Text style={styles.metricsTitle}>Performance Overview</Text>
+              <TouchableOpacity>
+                <BarChart3 size={20} color="#4F46E5" strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.metricsGrid}>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricValue}>94%</Text>
+                <Text style={styles.metricLabel}>Order Fulfillment</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricValue}>4.8</Text>
+                <Text style={styles.metricLabel}>Avg Rating</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricValue}>2.3d</Text>
+                <Text style={styles.metricLabel}>Avg Delivery</Text>
+              </View>
+            </View>
+          </BlurView>
         </View>
 
         <View style={{ height: 100 }} />
@@ -229,19 +318,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 30,
   },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#2D1B16',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#8B7355',
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -266,9 +377,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -287,70 +398,91 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#2D1B16',
     marginBottom: 4,
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#8B7355',
   },
   alertsContainer: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
     marginBottom: 30,
   },
-  alertCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 5,
-    borderWidth: 1,
-  },
-  warningAlert: {
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-    borderColor: 'rgba(251, 191, 36, 0.3)',
-  },
-  dangerAlert: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  alertTitle: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#2D1B16',
-    marginBottom: 4,
+    marginBottom: 16,
+  },
+  alertsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  alertCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 16,
+    padding: 16,
+    flex: 1,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  urgentAlert: {
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  alertIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  urgentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
   },
   alertValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#2D1B16',
     marginBottom: 4,
   },
-  alertDescription: {
+  alertTitle: {
     fontSize: 12,
-    color: '#8B7355',
-  },
-  menuContainer: {
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
     fontWeight: '600',
     color: '#2D1B16',
-    marginBottom: 16,
+    marginBottom: 2,
   },
-  menuGrid: {
+  alertDescription: {
+    fontSize: 10,
+    color: '#8B7355',
+  },
+  actionsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  menuItem: {
+  actionItem: {
     width: (screenWidth - 50) / 2,
     marginBottom: 16,
   },
-  menuItemInner: {
+  actionItemInner: {
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     borderRadius: 20,
     padding: 20,
@@ -358,24 +490,63 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  menuIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  actionIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
-  menuTitle: {
-    fontSize: 16,
+  actionTitle: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#2D1B16',
     marginBottom: 4,
     textAlign: 'center',
   },
-  menuDescription: {
-    fontSize: 12,
+  actionDescription: {
+    fontSize: 11,
     color: '#8B7355',
     textAlign: 'center',
+  },
+  metricsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  metricsCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  metricsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  metricsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D1B16',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  metricItem: {
+    alignItems: 'center',
+  },
+  metricValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2D1B16',
+    marginBottom: 4,
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#8B7355',
   },
 });
