@@ -21,7 +21,7 @@ const menuItems = [
 ];
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { getTotalItems } = useCart();
   const { items: wishlistItems } = useWishlist();
 
@@ -68,7 +68,15 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{user.email}</Text>
-              <Text style={styles.userEmail}>Member since 2024</Text>
+              <Text style={styles.userEmail}>
+                {isAdmin ? 'Administrator' : 'Member since 2024'}
+              </Text>
+              {isAdmin && (
+                <View style={styles.adminBadge}>
+                  <Shield size={12} color="#4F46E5" strokeWidth={2} />
+                  <Text style={styles.adminBadgeText}>Admin Access</Text>
+                </View>
+              )}
             </View>
           </View>
         </BlurView>
@@ -89,18 +97,23 @@ export default function ProfileScreen() {
           </BlurView>
         </View>
 
-        {/* Admin Access */}
-        <TouchableOpacity style={styles.adminButton} onPress={handleAdminAccess}>
-          <BlurView intensity={40} style={styles.adminInner}>
-            <View style={styles.adminLeft}>
-              <View style={styles.adminIcon}>
-                <Shield size={20} color="#4F46E5" strokeWidth={2} />
+        {/* Admin Access - Only show if user is admin */}
+        {isAdmin && (
+          <TouchableOpacity style={styles.adminButton} onPress={handleAdminAccess}>
+            <BlurView intensity={40} style={styles.adminInner}>
+              <View style={styles.adminLeft}>
+                <View style={styles.adminIcon}>
+                  <Shield size={20} color="#4F46E5" strokeWidth={2} />
+                </View>
+                <View>
+                  <Text style={styles.adminText}>Admin Dashboard</Text>
+                  <Text style={styles.adminSubtext}>Manage products, orders & users</Text>
+                </View>
               </View>
-              <Text style={styles.adminText}>Admin Dashboard</Text>
-            </View>
-            <ChevronRight size={16} color="#8B7355" strokeWidth={2} />
-          </BlurView>
-        </TouchableOpacity>
+              <ChevronRight size={16} color="#8B7355" strokeWidth={2} />
+            </BlurView>
+          </TouchableOpacity>
+        )}
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
@@ -192,6 +205,22 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: '#8B7355',
+    marginBottom: 8,
+  },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  adminBadgeText: {
+    fontSize: 10,
+    color: '#4F46E5',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -248,8 +277,13 @@ const styles = StyleSheet.create({
   },
   adminText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#4F46E5',
+  },
+  adminSubtext: {
+    fontSize: 12,
+    color: '#8B7355',
+    marginTop: 2,
   },
   menuContainer: {
     paddingHorizontal: 20,

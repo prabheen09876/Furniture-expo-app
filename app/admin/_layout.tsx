@@ -2,59 +2,64 @@ import { Stack } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { supabase } from '@/lib/supabase';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
 export default function AdminLayout() {
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const { user, isAdmin, loading } = useAuth();
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    checkAdminAccess();
-  }, [user]);
+    const checkAccess = async () => {
+      if (loading) return;
+      
+      if (!user) {
+        router.replace('/auth');
+        return;
+      }
 
-  const checkAdminAccess = async () => {
-    if (!user) {
-      setIsAdmin(false);
-      router.replace('/auth');
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('id', user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (error || !data) {
-        setIsAdmin(false);
+      if (!isAdmin) {
         router.replace('/');
         return;
       }
 
-      setIsAdmin(true);
-    } catch (error) {
-      setIsAdmin(false);
-      router.replace('/');
-    }
-  };
+      setChecking(false);
+    };
 
-  if (isAdmin === null) {
+    checkAccess();
+  }, [user, isAdmin, loading]);
+
+  if (loading || checking) {
     return (
-      <View style={styles.loading}>
-        <Text>Checking admin access...</Text>
-      </View>
+      <LinearGradient colors={['#F5E6D3', '#E8D5C4']} style={styles.container}>
+        <View style={styles.loading}>
+          <Text style={styles.loadingText}>Checking admin access...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LinearGradient colors={['#F5E6D3', '#E8D5C4']} style={styles.container}>
+        <View style={styles.unauthorized}>
+          <Text style={styles.unauthorizedText}>Authentication Required</Text>
+          <Text style={styles.unauthorizedSubtext}>Please sign in to continue.</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
   if (!isAdmin) {
     return (
-      <View style={styles.unauthorized}>
-        <Text style={styles.unauthorizedText}>Unauthorized Access</Text>
-        <Text>You don't have permission to access the admin panel.</Text>
-      </View>
+      <LinearGradient colors={['#F5E6D3', '#E8D5C4']} style={styles.container}>
+        <View style={styles.unauthorized}>
+          <Text style={styles.unauthorizedText}>Unauthorized Access</Text>
+          <Text style={styles.unauthorizedSubtext}>
+            You don't have permission to access the admin panel.
+          </Text>
+        </View>
+      </LinearGradient>
     );
   }
 
@@ -70,10 +75,17 @@ export default function AdminLayout() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#2D1B16',
   },
   unauthorized: {
     flex: 1,
@@ -86,5 +98,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     color: '#FF3B30',
+    textAlign: 'center',
+  },
+  unauthorizedSubtext: {
+    fontSize: 16,
+    color: '#8B7355',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
