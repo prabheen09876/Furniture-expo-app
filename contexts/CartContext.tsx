@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import { Database } from '@/types/database';
+import { Alert } from 'react-native';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type CartItem = Database['public']['Tables']['cart_items']['Row'] & {
@@ -56,7 +57,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const addToCart = async (productId: string) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('User must be authenticated to add items to cart');
+    }
 
     try {
       // Check if item already exists in cart
@@ -78,6 +81,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
+      throw error;
     }
   };
 
@@ -92,6 +96,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       await fetchCartItems();
     } catch (error) {
       console.error('Error removing from cart:', error);
+      throw error;
     }
   };
 
@@ -111,6 +116,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       await fetchCartItems();
     } catch (error) {
       console.error('Error updating quantity:', error);
+      throw error;
     }
   };
 

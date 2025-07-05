@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { Search, Bell, Star } from 'lucide-react-native';
+import { Search, Bell, Star, ShoppingCart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 
 type Product = Database['public']['Tables']['products']['Row'];
 
@@ -29,6 +30,7 @@ const categories = [
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { addToCart, getTotalItems } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +53,19 @@ export default function HomeScreen() {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddToCart = async (productId: string) => {
+    if (!user) {
+      router.push('/auth');
+      return;
+    }
+    
+    try {
+      await addToCart(productId);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
     }
   };
 
@@ -81,10 +96,23 @@ export default function HomeScreen() {
             <Text style={styles.title}>Casa</Text>
             <Text style={styles.subtitle}>Beautiful furniture for your home</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Bell size={20} color="#2D1B16" strokeWidth={2} />
-            <View style={styles.notificationDot} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.cartButton}
+              onPress={() => router.push('/cart')}
+            >
+              <ShoppingCart size={20} color="#2D1B16" strokeWidth={2} />
+              {getTotalItems() > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.notificationButton}>
+              <Bell size={20} color="#2D1B16" strokeWidth={2} />
+              <View style={styles.notificationDot} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search Bar */}
@@ -142,15 +170,26 @@ export default function HomeScreen() {
                     )}
                   </View>
                   <View style={styles.productInfo}>
-                    <Text style={styles.productName} numberOfLines={1}>
+                    <Text style={styles.productName} numberOfLines={2}>
                       {product.name}
                     </Text>
                     <View style={styles.productFooter}>
-                      <Text style={styles.productPrice}>${product.price}</Text>
-                      <View style={styles.ratingContainer}>
-                        <Star size={12} color="#FFD700" fill="#FFD700" strokeWidth={2} />
-                        <Text style={styles.rating}>{product.rating?.toFixed(1) || '0.0'}</Text>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.productPrice}>${product.price}</Text>
+                        <View style={styles.ratingContainer}>
+                          <Star size={12} color="#FFD700" fill="#FFD700" strokeWidth={2} />
+                          <Text style={styles.rating}>{product.rating?.toFixed(1) || '0.0'}</Text>
+                        </View>
                       </View>
+                      <TouchableOpacity
+                        style={styles.addToCartButton}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(product.id);
+                        }}
+                      >
+                        <ShoppingCart size={14} color="#FFFFFF" strokeWidth={2} />
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </BlurView>
@@ -195,6 +234,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8B7355',
     maxWidth: 200,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cartButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    position: 'relative',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#FF6B47',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
   },
   notificationButton: {
     width: 44,
@@ -285,7 +354,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   productCard: {
-    width: (screenWidth - 60) / 2,
+    width: (screenWidth - 50) / 2,
     marginBottom: 20,
   },
   productCardInner: {
@@ -323,25 +392,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   productInfo: {
-    alignItems: 'center',
+    flex: 1,
   },
   productName: {
     fontSize: 14,
     fontWeight: '500',
     color: '#2D1B16',
     marginBottom: 8,
-    textAlign: 'center',
+    lineHeight: 18,
   },
   productFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
+    alignItems: 'flex-end',
+  },
+  priceContainer: {
+    flex: 1,
   },
   productPrice: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#2D1B16',
+    marginBottom: 4,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -352,6 +424,14 @@ const styles = StyleSheet.create({
     color: '#8B7355',
     marginLeft: 4,
     fontWeight: '500',
+  },
+  addToCartButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#2D1B16',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   authPrompt: {
     flex: 1,

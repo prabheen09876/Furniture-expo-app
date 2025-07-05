@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { ArrowLeft, SlidersHorizontal, Star } from 'lucide-react-native';
+import { ArrowLeft, SlidersHorizontal, Star, ShoppingCart } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
+import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Product = Database['public']['Tables']['products']['Row'];
 
@@ -29,6 +31,8 @@ const categories = [
 
 export default function CategoriesScreen() {
   const { filter } = useLocalSearchParams();
+  const { user } = useAuth();
+  const { addToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(filter?.toString() || 'all');
   const [loading, setLoading] = useState(true);
@@ -57,6 +61,19 @@ export default function CategoriesScreen() {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddToCart = async (productId: string) => {
+    if (!user) {
+      router.push('/auth');
+      return;
+    }
+    
+    try {
+      await addToCart(productId);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
     }
   };
 
@@ -136,11 +153,20 @@ export default function CategoriesScreen() {
                       {product.original_price && product.original_price > product.price && (
                         <Text style={styles.originalPrice}>${product.original_price}</Text>
                       )}
+                      <View style={styles.ratingContainer}>
+                        <Star size={12} color="#FFD700" fill="#FFD700" strokeWidth={2} />
+                        <Text style={styles.rating}>{product.rating?.toFixed(1) || '0.0'}</Text>
+                      </View>
                     </View>
-                    <View style={styles.ratingContainer}>
-                      <Star size={12} color="#FFD700" fill="#FFD700" strokeWidth={2} />
-                      <Text style={styles.rating}>{product.rating?.toFixed(1) || '0.0'}</Text>
-                    </View>
+                    <TouchableOpacity
+                      style={styles.addToCartButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(product.id);
+                      }}
+                    >
+                      <ShoppingCart size={14} color="#FFFFFF" strokeWidth={2} />
+                    </TouchableOpacity>
                   </View>
                 </View>
               </BlurView>
@@ -299,11 +325,20 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
   rating: {
     fontSize: 12,
     color: '#8B7355',
     marginLeft: 4,
     fontWeight: '500',
+  },
+  addToCartButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#2D1B16',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
