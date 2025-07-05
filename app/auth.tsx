@@ -59,7 +59,13 @@ export default function AuthScreen() {
         : await signIn(email.trim(), password);
 
       if (error) {
-        console.error('Auth error:', error);
+        // Use console.warn for expected user input errors instead of console.error
+        if (error.message && error.message.includes('Invalid login credentials')) {
+          console.warn('Auth warning: Invalid login credentials provided by user');
+        } else {
+          console.error('Auth error:', error);
+        }
+        
         let errorMessage = 'An error occurred. Please try again.';
         
         if (error.message) {
