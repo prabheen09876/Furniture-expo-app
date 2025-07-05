@@ -30,7 +30,7 @@ const categories = [
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { addToCart, getTotalItems } = useCart();
+  const { addToCart } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,23 +96,10 @@ export default function HomeScreen() {
             <Text style={styles.title}>Casa</Text>
             <Text style={styles.subtitle}>Beautiful furniture for your home</Text>
           </View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.cartButton}
-              onPress={() => router.push('/cart')}
-            >
-              <ShoppingCart size={20} color="#2D1B16" strokeWidth={2} />
-              {getTotalItems() > 0 && (
-                <View style={styles.cartBadge}>
-                  <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.notificationButton}>
-              <Bell size={20} color="#2D1B16" strokeWidth={2} />
-              <View style={styles.notificationDot} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Bell size={20} color="#2D1B16" strokeWidth={2} />
+            <View style={styles.notificationDot} />
+          </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
@@ -234,36 +221,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8B7355',
     maxWidth: 200,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cartButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    position: 'relative',
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FF6B47',
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cartBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
   },
   notificationButton: {
     width: 44,
