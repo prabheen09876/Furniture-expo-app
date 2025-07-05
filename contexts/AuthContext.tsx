@@ -28,10 +28,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('admin_users')
         .select('*')
         .eq('id', userIdToCheck)
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
 
-      const adminStatus = !error && !!data;
+      // Check if data exists and has at least one row
+      const adminStatus = !error && data && data.length > 0;
       setIsAdmin(adminStatus);
       return adminStatus;
     } catch (error) {
@@ -75,78 +75,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      // Special handling for admin user
-      if (email.trim().toLowerCase() === 'admin@example.com') {
-        // First, try to sign in normally
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-        
-        if (error && error.message.includes('Invalid login credentials')) {
-          // If admin user doesn't exist, create them
-          console.log('Admin user not found, creating admin account...');
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: email.trim().toLowerCase(),
-            password,
-            options: {
-              emailRedirectTo: undefined,
-            },
-          });
-          
-          if (signUpError) {
-            console.error('Error creating admin user:', signUpError);
-            return { error: signUpError };
-          }
-          
-          if (signUpData.user) {
-            // Add user to admin_users table
-            const { error: adminError } = await supabase
-              .from('admin_users')
-              .upsert({
-                id: signUpData.user.id,
-                role: 'super_admin',
-                permissions: ['products:read', 'products:write', 'orders:read', 'orders:write', 'users:read', 'users:write', 'categories:read', 'categories:write'],
-                is_active: true,
-              });
-            
-            if (adminError) {
-              console.error('Error adding admin privileges:', adminError);
-            }
-            
-            console.log('Admin user created successfully');
-            await checkAdminStatus(signUpData.user.id);
-          }
-          
-          return { error: null };
-        } else if (error) {
-          return { error };
-        } else {
-          // Sign in successful, check admin status
-          if (data.user) {
-            await checkAdminStatus(data.user.id);
-          }
-          return { error: null };
-        }
-      } else {
-        // Regular user sign in
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-        
-        if (error) {
-          console.error('Sign in error:', error);
-          return { error };
-        }
-        
-        if (data.user) {
-          await checkAdminStatus(data.user.id);
-        }
-        
-        console.log('Sign in successful:', data.user?.email);
-        return { error: null };
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        return { error };
       }
+      
+      if (data.user) {
+        await checkAdminStatus(data.user.id);
+      }
+      
+      console.log('Sign in successful:', data.user?.email);
+      return { error: null };
     } catch (error) {
       console.error('Sign in exception:', error);
       return { error };
@@ -172,6 +116,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('Sign up successful:', data.user?.email);
+      
+      // If this is the admin user, add admin privileges
+      if (data.user && email.trim().toLowerCase() === 'admin@example.com') {
+        try {
+          const { error: adminError } = await supabase
+            .from('admin_users')
+            .upsert({
+              id: data.user.id,
+              role: 'super_admin',
+              permissions: ['products:read', 'products:write', 'orders:read', 'orders:write', 'users:read', 'users:write', 'categories:read', 'categories:write'],
+              is_active: true,
+            });
+          
+          if (adminError) {
+            console.error('Error adding admin privileges:', adminError);
+          } else {
+            console.log('Admin privileges added successfully');
+            await checkAdminStatus(data.user.id);
+          }
+        } catch (adminError) {
+          console.error('Exception adding admin privileges:', adminError);
+        }
+      }
       
       if (data.user && !data.user.email_confirmed_at) {
         console.log('User created but email not confirmed. Check Supabase settings.');
