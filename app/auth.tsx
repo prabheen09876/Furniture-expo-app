@@ -64,13 +64,17 @@ export default function AuthScreen() {
         
         if (error.message) {
           if (error.message.includes('Invalid login credentials')) {
-            errorMessage = 'Invalid email or password. Please check your credentials.';
+            errorMessage = 'Invalid email or password. Please check your credentials and try again.';
           } else if (error.message.includes('User already registered')) {
             errorMessage = 'An account with this email already exists. Please sign in instead.';
           } else if (error.message.includes('Password should be at least 6 characters')) {
             errorMessage = 'Password must be at least 6 characters long.';
           } else if (error.message.includes('Unable to validate email address')) {
             errorMessage = 'Please enter a valid email address.';
+          } else if (error.message.includes('Database error saving new user')) {
+            errorMessage = 'Failed to create account. This might be due to Supabase configuration issues (e.g., RLS policies or signup settings). Please check your Supabase project settings or contact support.';
+          } else if (error.message.includes('unexpected_failure')) {
+            errorMessage = 'Account creation failed due to server configuration issues. Please ensure Supabase email signups are enabled and RLS policies allow user creation.';
           } else {
             errorMessage = error.message;
           }
